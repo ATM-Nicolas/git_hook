@@ -1,0 +1,64 @@
+#!/bin/sh
+
+CONF_FILE="/htdocs/conf/conf.php"
+BACKUP="/../dolibarr_conf/"
+
+prev_head="$1"
+new_head="$2"
+chg_branch="$3"
+
+
+if [ -z "$GIT_DIR" ]; then 													# Test si vide. 
+	exit 1
+fi
+
+if [ $chg_branch -ne 1 ]; then
+	exit 1
+fi
+	
+toplevel="$(git rev-parse --show-toplevel)" 							# Get racine
+prev_branch="$(git rev-parse --abbrev-ref @{-1})" 						# Get branch name avant
+new_branch="$(git rev-parse --abbrev-ref HEAD)" 						# Get branch name cible
+
+
+if [ $prev_branch = $new_branch ]; then
+	exit 0
+fi
+
+mkdir -p $toplevel$BACKUP 													# Create dossier backup
+
+if [ -f $toplevel$CONF_FILE ]; then
+	echo "Backing up "$toplevel$CONF_FILE" into "$toplevel$BACKUP"conf.php."$prev_branch
+	mv $toplevel$CONF_FILE $toplevel$BACKUP"conf.php."$prev_branch 			# Backing up conf.php
+fi
+
+if [ -f $toplevel$BACKUP"conf.php."$new_branch ]; then
+	echo "Restoring "$toplevel$BACKUP"conf.php."$new_branch
+	mv $toplevel$BACKUP"conf.php."$new_branch $toplevel$CONF_FILE 			# Restauring backup conf.php
+else
+	echo "No backup found for this branch."
+	
+	exec < /dev/tty															# Input
+	while true; do
+	
+		read -p "Do you want to keep the current configuration? (Y/n)" yn
+		if [ -z "$yn" ]; then
+			yn='Y'
+		fi
+		
+		case $yn in
+			[Yy]*)
+				cp $toplevel$BACKUP"conf.php."$prev_branch $toplevel$CONF_FILE; break
+				;;
+			[Nn]*)
+				exit
+				;;
+			*)
+				echo "Please answer y or n."
+				;;
+		esac
+	
+	done
+fi
+
+exit 0
