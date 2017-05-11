@@ -18,9 +18,11 @@ fi
 	
 toplevel="$(git rev-parse --show-toplevel)" 							# Get racine
 # prev_branch="$(git rev-parse --abbrev-ref @{-1})" 						# Get branch name avant
-prev_branch="$(git name-rev  --name-only @{-1} | tr "/" "." | tr -d '^0')" 			# Get branch name avant
+# prev_branch="$(git name-rev  --name-only @{-1} | tr "/" "." | tr -d '^0')" 			# Get branch name avant
+prev_branch="$(git name-rev  --name-only @{-1} | tr "/" "." | sed 's/\^0//')" 			# Get branch name avant
 # new_branch="$(git rev-parse --abbrev-ref HEAD)" 						# Get branch name cible
-new_branch="$(git name-rev  --name-only HEAD | tr "/" "." | tr -d '^0')" 			# Get branch name cible
+# new_branch="$(git name-rev  --name-only HEAD | tr "/" "." | tr -d '^0')" 			# Get branch name cible
+new_branch="$(git name-rev  --name-only HEAD | tr "/" "." | sed 's/\^0//')" 			# Get branch name cible
 
 
 if [ $prev_branch = $new_branch ]; then
