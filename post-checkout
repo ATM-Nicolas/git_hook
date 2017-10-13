@@ -1,7 +1,6 @@
 #!/bin/sh
 
 CONF_FILE="/htdocs/conf/conf.php"
-CONF_FILE="/conf.php"
 BACKUP="/../dolibarr_conf/"
 
 prev_head="$1"
