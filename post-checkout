@@ -1,4 +1,7 @@
 #!/bin/sh
+case "$TERM" in
+    xterm-color|*-256color) color_prompt=yes;;
+esac
 
 CONF_FILE="/htdocs/conf/conf.php"
 BACKUP="/.git/dolibarr_conf/"
@@ -15,27 +18,22 @@ if [ $chg_branch -ne 1 ]; then
     exit 1
 fi
 
-
 rldesc="$(git reflog | head -n 1)"
 
 before="$(echo $rldesc | sed -e 's/^.* from \(.*\) to.*/\1/')"
 after="$(echo $rldesc | sed -e 's/^.*to \(.*\)/\1/')"
 
+if [ ! -z "$(git tag | grep -Fx $before)" ]; then
+    before="$(git rev-list -n 1 $before)"
+fi
 
-for tag in $(git for-each-ref --format='%(refname)' refs/tags/ | sed 's/refs\/tags\///'); do
-    hash="$(git show-ref -s $tag)"
-	if [ "$hash" = "$before" ]; then
-		before=$tag
-	elif [ "$hash" = "$after" ]; then
-		after=$tag
-	fi
-done
-
+if [ ! -z "$(git tag | grep -Fx $after)" ]; then
+    after="$(git rev-list -n 1 $after)"
+fi
 
 toplevel="$(git rev-parse --show-toplevel)"					# Get racine
-prev_branch=$before											# Get branch/tag name before checkout
-new_branch=$after											# Get branch/tag name after checkout
-
+prev_branch=$before								# Get branch/tag name before checkout
+new_branch=$after								# Get branch/tag name after checkout
 
 if [ $prev_branch = $new_branch ]; then
     exit 0
@@ -46,13 +44,21 @@ if [ ! -d "$toplevel$BACKUP" ]; then
 fi
 
 if [ -f $toplevel$CONF_FILE ]; then
-    echo "Backing up "$CONF_FILE" into conf.php."$prev_branch
-    mv $toplevel$CONF_FILE $toplevel$BACKUP"conf.php."$prev_branch          # Backing up conf.php
+    if [ "$color_prompt" = yes ]; then
+        echo "\033[1;35mBacking up\033[0m ${CONF_FILE} into conf.php.${prev_branch}"
+    else
+        echo "Backing up ${CONF_FILE} into conf.php.${prev_branch}"
+    fi
+    mv "${toplevel}${CONF_FILE}" "${toplevel}${BACKUP}conf.php.${prev_branch}"          # Backing up conf.php
 fi
 
 if [ -f $toplevel$BACKUP"conf.php."$new_branch ]; then
-    echo "Restoring "$BACKUP"conf.php."$new_branch
-    mv $toplevel$BACKUP"conf.php."$new_branch $toplevel$CONF_FILE           # Restauring backup conf.php
+    if [ "$color_prompt" = yes ]; then 
+        echo "\033[1;35mRestoring\033[0m ${BACKUP}conf.php.${new_branch}"
+    else
+        echo "Restoring ${BACKUP}conf.php.${new_branch}"
+    fi
+    mv "${toplevel}${BACKUP}conf.php.${new_branch}" "${toplevel}${CONF_FILE}"           # Restauring backup conf.php
 else
     echo "No backup found for this branch."
 
@@ -80,3 +86,4 @@ else
 fi
 
 exit 0
+
